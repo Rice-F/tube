@@ -1,9 +1,15 @@
-import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 export default function Home() {
   return (
-    <div className="font-bold text-rose-300">
-      <Button variant="outline">hello tube</Button>
+    <div>
+      <Image
+        src="/logo.svg"
+        width={50}
+        height={50}
+        alt="Logo"
+      />
+      <p className="text-xl font-semibold tracking-tight">New Tube</p>
     </div>
   );
 }
