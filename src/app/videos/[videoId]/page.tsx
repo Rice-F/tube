@@ -6,10 +6,10 @@ interface VideoIdPageProps{
 const Page = async ({ params }: VideoIdPageProps) => {
   // 通过await获取异步参数
   const { videoId } = await params; 
-  
+
   return (
     <div>
-      video ID: { videoId }
+      videos-video ID: { videoId }
     </div>
   )
 }
