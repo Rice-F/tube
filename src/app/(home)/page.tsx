@@ -9,7 +9,7 @@ export default function Home() {
         height={50}
         alt="Logo"
       />
-      <p className="text-xl font-semibold tracking-tight">New Tube</p>
+      <p className="text-xl font-semibold tracking-tight">New Tube2</p>
     </div>
   );
 }
