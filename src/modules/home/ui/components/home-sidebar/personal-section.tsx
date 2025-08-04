@@ -13,6 +13,8 @@ import {
 
 import Link from "next/link";
 
+import { useAuth, useClerk } from "@clerk/nextjs";
+
 const items = [
   {
     title: 'History',
@@ -35,6 +37,9 @@ const items = [
 ];
 
 export const PersonalSection = () => {
+  const { isSignedIn } = useAuth();
+  const clerk = useClerk();
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>You</SidebarGroupLabel>    
@@ -46,7 +51,12 @@ export const PersonalSection = () => {
                 tooltip={item.title}
                 asChild
                 isActive={false}
-                onClick={e => {}}
+                onClick={e => {
+                  if(!isSignedIn && item.auth) {
+                    e.preventDefault();
+                    return clerk.openSignIn();
+                  }
+                }}
               >
                 <Link href={item.url} className="flex items-center gap-4">
                   <item.icon />
