@@ -14,3 +14,11 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("update_at").defaultNow().notNull(),
 }, t => [uniqueIndex("clerk_id_idx").on(t.clerkId)]); // 唯一索引，搜索优化
+
+export const categories = pgTable("categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("update_at").defaultNow().notNull(),
+}, t => [uniqueIndex("name_idx").on(t.name)]);
