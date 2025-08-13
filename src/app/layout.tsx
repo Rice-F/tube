@@ -26,7 +26,6 @@ export default function RootLayout({
             <TRPCProvider>
               {children}
             </TRPCProvider>
-            {children}
           </body>
         </html>
     </ClerkProvider>
