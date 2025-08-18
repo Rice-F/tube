@@ -4,6 +4,9 @@ import { trpc } from '@/trpc/client'
 
 import { Suspense } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { useRouter } from 'next/navigation';
+
+import { FilterCarousel } from '@/components/filter-carousel';
 
 interface CategoriesSectionProps {
   categoryId?: string;
@@ -22,15 +25,32 @@ export const CategoriesSection = ({ categoryId }: CategoriesSectionProps) => {
 }
 
 const CategoriesSkeleton = () => {
-  return (
-    <div>skeleton</div>
-  )
+  return <FilterCarousel isLoading onSelect={() => {}} data={[]}/>
 }
 
 const CategoriesSectionSuspense = ({ categoryId }: CategoriesSectionProps) => {
+  const router = useRouter();
   const [categories] = trpc.categories.getAll.useSuspenseQuery()
 
-  return (
-    <div>{JSON.stringify(categories)}</div>
-  )
+  // 将 categories 转换为 FilterCarousel 组件需要的数据格式
+  const data = categories.map(({ name, id }) => (
+    {
+      value: id,
+      label: name,
+    }
+  ))
+
+  const onSelect = (value: string | null) => {
+    const url = new URL(window.location.href);
+
+    if(value) {
+      url.searchParams.set('categoryId', value);
+    }else {
+      url.searchParams.delete('categoryId');
+    }
+
+    router.push(url.toString())
+  }
+
+  return <FilterCarousel value={ categoryId } data={ data } onSelect={ onSelect } />
 }
