@@ -11,20 +11,21 @@ import {
 import { Separator } from "@/components/ui/separator";
 
 import Link from "next/link";
-import {usePathname} from "next/navigation";
+import { usePathname } from "next/navigation";
 
 import { LogOutIcon, VideoIcon } from "lucide-react";
-import path from "path";
+
+import { StudioSidebarHeader } from "./studio-sidebar-header";
 
 export const StudioSidebar = () => {
   const pathname = usePathname();
-  console.log('路径', pathname);
 
   return (
     <Sidebar className="pt-16 z-40" collapsible="icon">
       <SidebarContent className="bg-background">
         <SidebarGroup>
           <SidebarMenu>
+            <StudioSidebarHeader />
             <SidebarMenuItem>
               <SidebarMenuButton isActive={pathname === '/studio'} tooltip="Content" asChild>
                 <Link href="/studio">
