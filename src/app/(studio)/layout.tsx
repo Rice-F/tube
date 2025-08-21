@@ -1,10 +1,12 @@
+import { StudioLayout } from "@/modules/studio/ui/layouts/studio-layout";
+
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout = ({ children }: LayoutProps) => {
   return (
-    <div>{ children }</div>
+    <StudioLayout>{children}</StudioLayout>
   )
 }
 
