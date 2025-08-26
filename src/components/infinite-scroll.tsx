@@ -32,7 +32,7 @@ export const InfiniteScroll = ({
   }, [isManual, isIntersecting, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   return (
-    <div className="flex flex-col items-center gap-4 p-4">
+    <div className="flex flex-col items-center p-4 pb-5">
       <div ref={targetRef} className="h-1" />
       {hasNextPage ? (
         <Button 
