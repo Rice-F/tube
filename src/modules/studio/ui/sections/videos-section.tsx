@@ -32,6 +32,6 @@ export const VideosSectionSuspense = () => {
   )
 
   return (
-    <div>suspense</div>
+    <div>{JSON.stringify(videos)}</div>
   )
 }
