@@ -39,6 +39,12 @@ export const videos = pgTable("videos", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull(),
   description: text("description"),
+  muxStatus: text("mux_status"),
+  muxAssetId: text("mux_asset_id").unique(), // 已上传
+  muxUploadId: text("mux_upload_id").unique(), // 上传过程
+  muxPlaybackId: text("mux_playback_id").unique(), // 回放视频并生成缩略图或预览
+  muxTrackId: text("mux_track_id").unique(), // 视频字幕
+  muxTrackStatus: text("mux_track_status"), // 视频字幕
   userId: uuid("user_id").references(() => users.id, { // 外键 - 关联到users表的id字段
     onDelete: "cascade", // 级联删除，如果用户被删除，则删除该用户的所有视频
   }).notNull(),
