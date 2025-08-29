@@ -4,6 +4,7 @@ import { trpc } from '@/trpc/client'
 
 import { Suspense } from 'react'
 import { ErrorBoundary } from 'react-error-boundary';
+import { LockIcon, Globe2Icon } from 'lucide-react'
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { InfiniteScroll } from '@/components/infinite-scroll';
@@ -19,6 +20,11 @@ import {
 import { DEFAULT_LIMIT } from '@/constants';
 
 import {  useRouter } from 'next/navigation'
+
+import { VideoThumbnail } from '@/modules/videos/ui/components/video-thumbnail';
+
+import { snakeCaseToTitle } from '@/lib/utils';
+import { format } from 'date-fns'
 
 export const VideosSection = () => {
   return (
@@ -47,7 +53,7 @@ export const VideosSectionSuspense = () => {
   return (
     <div>
       {/* border-y: 同时给元素的 上边框 (border-top) 和 下边框 (border-bottom) 加上样式 */}
-      <div className='border-y'>
+      <div className="border-y">
         <Table>
           <TableHeader>
             <TableRow>
@@ -69,16 +75,34 @@ export const VideosSectionSuspense = () => {
               >
                 <TableCell className='pl-6'>
                   <div className='flex items-center gap-4'>
-                    <div className='relative aspect-video w-36 shrink-0 border'></div>
+                    <div className='relative aspect-video w-36 shrink-0'>
+                      <VideoThumbnail
+                        thumbnailUrl={video.thumbnailUrl} 
+                        previewGifUrl={video.previewUrl}
+                        title={video.title}
+                        duration={video.duration || 0}
+                      />
+                    </div>
                     <div className='flex flex-col overflow-hidden gap-y-1'>
                       <span className='text-sm line-clamp-1'>{ video.title }</span>
-                      <span className='text-xs text-muted-foreground line-clamp-1'>{ video.description }</span>
+                      <span className='text-xs text-muted-foreground line-clamp-1'>{ video.description || 'No description' }</span>
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>visibility</TableCell>
-                <TableCell className='text-sm truncate'>status</TableCell>
-                <TableCell>date</TableCell>
+                <TableCell>
+                  <div className='flex items-center'>
+                    {video.visibility === 'private' ? (
+                      <LockIcon className="size-4 mr-2" />
+                    ) : (
+                      <Globe2Icon className="size-4 mr-2" />
+                    )}
+                    {snakeCaseToTitle(video.visibility)}
+                  </div>
+                </TableCell>
+                <TableCell className='text-sm truncate'>
+                  <div className='flex items-center'>{snakeCaseToTitle(video.muxStatus || 'error')}</div>
+                </TableCell>
+                <TableCell>{format(new Date(video.createdAt), 'd MMM yyyy')}</TableCell>
                 <TableCell className='text-right'>views</TableCell>
                 <TableCell className='text-right'>Comments</TableCell>
                 <TableCell className='text-right pr-6'>Like</TableCell>
