@@ -8,6 +8,11 @@ import {
   pgEnum
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+import { 
+  createInsertSchema,  // 插入验证 - 定义插入数据库的数据结构
+  createUpdateSchema,  // 更新验证 - 定义更新数据库的数据结构
+  createSelectSchema,  // 查询验证 - 定义查询数据库的数据结构
+ } from 'drizzle-zod'
 
 // users
 export const users = pgTable("users", {
@@ -80,3 +85,7 @@ export const videoRelations = relations(videos, ({ one }) => (
     }),
   }
 ))
+
+export const videosInsertSchema = createInsertSchema(videos)  // 表单提交 / tRPC mutation 时验证
+export const videosUpdateSchema = createUpdateSchema(videos)  // 表单编辑 / tRPC update mutation 时验证
+export const videosSelectSchema = createSelectSchema(videos)  // 类型推导 / API 返回数据的验证
