@@ -1,11 +1,12 @@
 import { baseProcedure, protectedProcedure, createTRPCRouter } from '@/trpc/init'
+import { TRPCError } from '@trpc/server'
 
 import { z } from 'zod'
 
 import { eq, and } from 'drizzle-orm'
 
 import { db } from '@/db'
-import { videos } from '@/db/schema'
+import { videos, videosUpdateSchema, users } from '@/db/schema'
 
 import { mux } from '@/lib/mux'
 
@@ -49,5 +50,31 @@ export const videosRouter = createTRPCRouter({
       video,
       uploadUrl: upload.url // 返回上传URL给前端
     }
-  })
+  }),
+  update: protectedProcedure
+    .input(videosUpdateSchema) // 使用videosUpdateSchema作为输入验证规则
+    .mutation(async ({ ctx, input }) => {
+      const { id: userId } = ctx.user
+
+      if(!input.id) throw new TRPCError({ code: 'BAD_REQUEST' })
+
+      const [updatedVideo] = await db  
+        .update(videos)
+        .set({
+          title: input.title,
+          description: input.description,
+          categoryId: input.categoryId,
+          visibility: input.visibility,
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(videos.id, input.id),
+          eq(videos.userId, userId)
+        ))
+        .returning()
+
+      if(!updatedVideo) throw new TRPCError({ code: 'NOT_FOUND' })
+
+      return updatedVideo
+    })
 })
