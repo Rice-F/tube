@@ -6,6 +6,7 @@ import { eq, and, or, lt, desc } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { videos } from '@/db/schema'
+import { TRPCError } from '@trpc/server'
 
 export const studioRouter = createTRPCRouter({
   getAll: protectedProcedure
@@ -55,5 +56,26 @@ export const studioRouter = createTRPCRouter({
         videosData,
         nextCursor, // 是一个对象，包含了id和updatedAt两个字段
       }
+    }),
+
+  getOne: protectedProcedure
+    .input(z.object({ videoId: z.uuid() }))
+    .query(async ({ ctx, input }) => {
+      const { videoId } = input
+      const { id: userId } = ctx.user
+
+      const [video] = await db
+        .select()
+        .from(videos)
+        .where(
+          and(
+            eq(videos.id, videoId),
+            eq(videos.userId, userId) // 只能查询自己的视频
+          )
+        )
+      
+      if(!video) throw new TRPCError({ code: 'NOT_FOUND'})
+      
+      return video
     })
 })
