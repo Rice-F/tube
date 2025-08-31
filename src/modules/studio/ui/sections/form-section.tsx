@@ -50,6 +50,12 @@ import {
 } from '@/components/ui/form'
 
 import { toast } from 'sonner'
+import { snakeCaseToTitle } from '@/lib/utils';
+
+import { VideoPlayer } from '@/modules/videos/ui/components/video-player';
+
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface FormSectionProps {
   videoId: string;
@@ -73,6 +79,7 @@ const FormSectionSkeleton = () => {
 
 const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
   const utils = trpc.useUtils()
+  const router = useRouter()
 
   const [video] = trpc.studio.getOne.useSuspenseQuery({ videoId })
   const [categories] = trpc.categories.getAll.useSuspenseQuery()
@@ -97,6 +104,29 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
     updateForm.mutateAsync(formData)  // 异步触发函数，返回promise
   }
 
+  const deleteVideo = trpc.videos.delete.useMutation({
+    onSuccess: () => {
+      utils.studio.getAll.invalidate() // 更新成功后，重新获取视频列表
+      toast.success('Video removed')
+      router.push('/studio') // 删除成功后，跳转到视频列表页
+    },
+    onError: () => {
+      toast.error('Something went wrong')
+    }
+  })
+
+  // link & copy
+  const [isCopied, setIsCopied] = useState(false)
+  const linkUrl = `${process.env.VERCEL_URL || 'http://localhost:3000'}/videos/${video.id}`
+  const onCopy = async () => {
+    await navigator.clipboard.writeText(linkUrl)
+    setIsCopied(true)
+    setTimeout(() => {
+      setIsCopied(false)
+    }
+    , 2000)
+  }
+
   return (
     <>
       <Form {...formObject}>
@@ -116,7 +146,7 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => {}}>
+                  <DropdownMenuItem onClick={() => deleteVideo.mutate({ videoId })}>
                     <TrashIcon className='size-4 mr-2' /> Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -196,7 +226,74 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
             </div>
             {/* right */}
             <div className='flex flex-col gap-y-8 lg:col-span-2'>
-              <div className='flex flex-col gap-4 bg-[#F9F9F9] rounded-xl overflow-hidden h-fit'>right</div>
+              <div className='flex flex-col gap-4 bg-[#F9F9F9] rounded-xl overflow-hidden h-fit'>
+                <div className='aspect-video overflow-hidden relative'>
+                  <VideoPlayer
+                    playbackId={video.muxPlaybackId}
+                    thumbnailUrl={video.thumbnailUrl}
+                  />
+                </div>
+                <div className='flex flex-col p-4 gap-y-6'>
+                  {/* link */}
+                  <div className='flex flex-col gap-y-1'>
+                    <p className='text-muted-foreground text-xs'>Video link</p>
+                    <div className='flex items-center gap-x-2'>
+                      <Link href={`/videos/${video.id}`}>
+                        <p className='line-clamp-1 text-sm text-blue-500'>{ linkUrl }</p>
+                      </Link>
+                      <Button
+                        type='button'
+                        variant='ghost'
+                        size='icon'
+                        className='shrink-0 cursor-pointer'
+                        onClick={onCopy}
+                        disabled={isCopied}
+                      >
+                        {isCopied ? <CopyCheckIcon /> : <CopyIcon />}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className='flex flex-col gap-y-1'>
+                    <p className='text-muted-foreground text-xs'>Video status</p>
+                    <p className='text-sm'>{snakeCaseToTitle(video.muxStatus || 'preparing')}</p>
+                  </div>
+                  <div className='flex flex-col gap-y-1'>
+                    <p className='text-muted-foreground text-xs'>Subtitles status</p>
+                    <p className='text-sm'>{snakeCaseToTitle(video.muxTrackStatus || 'no_ subtitles')}</p>
+                  </div>
+                </div>
+              </div>
+              <FormField
+                control={formObject.control}
+                name="visibility"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>visibility</FormLabel>
+                    <Select onValueChange={ field.onChange } defaultValue={ field.value || undefined }>
+                      <FormControl>
+                        <SelectTrigger className='w-full'>
+                          <SelectValue placeholder='Select visibility' />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="public">
+                          <div className="flex items-center">
+                            <Globe2Icon className='size-4 mr-2' />
+                            Public
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="private">
+                          <div className="flex items-center">
+                            <LockIcon className='size-4 mr-2' />
+                            Private
+                          </div>
+                        </SelectItem> 
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
           </div>
         </form>
