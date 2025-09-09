@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
       // uploadthing 的图片
       {
         protocol: 'https',
-        hostname: 'szxu79mai4.ufs.sh'
+        hostname: '9bs3dqprct.ufs.sh'
       }
     ]
   } 
