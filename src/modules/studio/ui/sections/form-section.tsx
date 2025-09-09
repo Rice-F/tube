@@ -4,8 +4,8 @@ import { trpc } from '@/trpc/client'
 
 import {Suspense, useState} from 'react'
 import { ErrorBoundary } from 'react-error-boundary';
-
 import { useForm } from 'react-hook-form'
+
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { videosUpdateSchema } from '@/db/schema';
@@ -53,9 +53,13 @@ import { toast } from 'sonner'
 import { snakeCaseToTitle } from '@/lib/utils';
 
 import { VideoPlayer } from '@/modules/videos/ui/components/video-player';
+import { ThumbnailUploadModal } from '@/modules/studio/ui/components/thumbnail-upload-modal';
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+
+import { THUMBNAIL_FALLBACK } from '@/modules/videos/constants'
 
 interface FormSectionProps {
   videoId: string;
@@ -127,8 +131,31 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
     , 2000)
   }
 
+  // thumbnail
+  const [thumbnailUploadModalOpen, setThumbnailUploadModalOpen] = useState(false)
+  const [thumbnailGenerateModalOpen, setThumbnailGenerateModalOpen] = useState(false)
+
+  // restore thumbnail
+  const restoreThumbnail = trpc.videos.restoreThumbnail.useMutation({
+    onSuccess: () => {
+      utils.studio.getAll.invalidate() 
+      utils.studio.getOne.invalidate({ videoId }) 
+      toast.success('Thumbnail restored')
+    },
+    onError: () => {
+      toast.error('Something went wrong')
+    }
+  })
+
   return (
     <>
+      <ThumbnailUploadModal 
+        open={thumbnailUploadModalOpen}
+        videoId={video.id}
+        onOpenChange={setThumbnailUploadModalOpen}
+      />
+
+      {/* Form */}
       <Form {...formObject}>
         <form onSubmit={ formObject.handleSubmit(onSubmit) }>
           {/* header */}
@@ -200,6 +227,51 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
                   </FormItem>
 
                 )}
+              />
+              <FormField
+                control={ formObject.control }
+                name="thumbnailUrl"
+                render={() => (
+                  <FormItem>
+                    <FormLabel>Thumbnail</FormLabel>
+                    <FormControl>
+                      <div className='p-0.5 border border-dashed border-neutral-400 relative h-[84px] w-[153px] group'>
+                        <Image 
+                          src={video.thumbnailUrl ?? THUMBNAIL_FALLBACK}
+                          fill
+                          sizes='153px'
+                          alt='Thumbnail'
+                          className='object-cover'
+                        />
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              size="icon"
+                              className='bg-black/50 hover:bg-black/50 absolute top-1 right-1 rounded-full opacity-100 md:opacity-0 group-hover:opacity-100 duration-300 size-7'
+                            >
+                              <MoreVerticalIcon className='text-white' />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" side='right'>
+                            <DropdownMenuItem onClick={() => setThumbnailUploadModalOpen(true)}>
+                              <ImagePlusIcon className='size-4 mr-1' />
+                              Change
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setThumbnailGenerateModalOpen(true)}>
+                              <SparklesIcon className='size-4 mr-1' />
+                              AI-generated
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => restoreThumbnail.mutate({ videoId: video.id })}>
+                              <RotateCcwIcon className='size-4 mr-1' />
+                              Restore
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+      )}
               />
               <FormField 
                 control={ formObject.control }
