@@ -10,6 +10,8 @@ import { videos, videosUpdateSchema, users } from '@/db/schema'
 
 import { mux } from '@/lib/mux'
 
+import { UTApi } from "uploadthing/server";
+
 export const videosRouter = createTRPCRouter({
   // mutation对应对数据库的增删改，表示会修改数据库数据
   create: protectedProcedure
@@ -94,5 +96,54 @@ export const videosRouter = createTRPCRouter({
       if(!deletedVideo) throw new TRPCError({ code: 'NOT_FOUND' })
 
       return deletedVideo
+    }),
+  restoreThumbnail: protectedProcedure
+    .input(z.object({videoId: z.uuid()}))
+    .mutation(async ({ ctx, input }) => {
+      const {id: userId} = ctx.user
+
+      const [exitingVideo] = await db
+        .select()
+        .from(videos)
+        .where(and(
+          eq(videos.id, input.videoId),
+          eq(videos.userId, userId)
+        ))
+      if(!exitingVideo) throw new TRPCError({ code: 'NOT_FOUND' })
+
+      if (exitingVideo.thumbnailKey) {
+        const utApi = new UTApi(); 
+        await utApi.deleteFiles(exitingVideo.thumbnailKey); // 清除uploadthing旧的thumbnail
+        await db
+          .update(videos)
+          .set({ thumbnailKey: null, thumbnailUrl: null }) // 清除数据库中旧的thumbnail
+          .where(
+            and(
+              eq(videos.id, input.videoId),
+              eq(videos.userId, userId)
+            )
+          );
+      }
+
+      if(!exitingVideo.muxPlaybackId) throw new TRPCError({ code: 'BAD_REQUEST' })
+
+      const tempThumbnailUrl = `https://image.mux.com/${exitingVideo.muxPlaybackId}/thumbnail.jpg`
+      const utApi = new UTApi(); 
+      const uploadThumbnail = await utApi.uploadFilesFromUrl(tempThumbnailUrl)
+      if(!uploadThumbnail.data) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' })
+
+      const { key: thumbnailKey, ufsUrl: thumbnailUrl } = uploadThumbnail.data
+
+      const [updatedVideo] = await db
+        .update(videos)
+        .set({ thumbnailUrl, thumbnailKey })
+        .where(
+          and(
+            eq(videos.id, input.videoId),
+            eq(videos.userId, userId)
+          )
+        )
+        .returning()
+      return updatedVideo
     })
 })
