@@ -14,6 +14,8 @@ import { eq } from 'drizzle-orm'
 
 import { mux } from '@/lib/mux'
 
+import { UTApi } from "uploadthing/server";
+
 const SIGNING_SECRET = process.env.MUX_WEBHOOK_SECRET!
 
 // 联合类型
@@ -76,14 +78,66 @@ export const POST = async (request: Request) => {
       const tempPreviewUrl = `https://image.mux.com/${playbackId}/animated.gif`
       const duration = payloadData.duration ? Math.round(payloadData.duration * 1000) : 0;
 
+      const utApi = new UTApi();
+
+      // thumbnail - 确保异步操作不会阻塞事件循环 
+      setImmediate(async () => {
+        try {
+          // 上传至uploadthing
+          const uploadThumbnail = await utApi.uploadFilesFromUrl(tempThumbnailUrl)
+
+          if(!uploadThumbnail.data?.ufsUrl) {
+            // return logger.error("Failed to upload thumbnail")
+            throw new Response("Failed to upload thumbnail", { status: 500 })
+          }
+
+          const { key: thumbnailKey, ufsUrl: thumbnailUrl } = uploadThumbnail.data
+
+          await db
+            .update(videos)
+            .set({
+              thumbnailUrl,
+              thumbnailKey,
+            })
+            .where(eq(videos.muxUploadId, payloadData.upload_id!)) // data.upload_id! 表示非空断言
+        }catch(err) {
+          // logger.error('Error processing video.asset.ready webhook:', err)
+          throw new Response("Error processing video.asset.ready webhook:", { status: 500 })
+        }
+      }) 
+
+      // previewUrl
+      setImmediate(async () => {
+        try {
+          // 上传至uploadthing
+          const uploadPreview = await utApi.uploadFilesFromUrl(tempPreviewUrl)
+
+          if(!uploadPreview.data?.ufsUrl) {
+            throw new Response("Failed to upload preview", { status: 500 })
+          }
+
+          const { key: previewKey, ufsUrl: previewUrl } = uploadPreview.data
+
+          await db
+            .update(videos)
+            .set({
+              previewUrl,
+              previewKey,
+            })
+            .where(eq(videos.muxUploadId, payloadData.upload_id!))
+        }catch (err) {
+          // logger.error('Error processing video.asset.ready webhook:', err)
+          throw new Response("Error processing video.asset.ready webhook:", { status: 500 })
+        }
+
+      })
+
       await db
         .update(videos)
         .set({
           muxStatus: payloadData.status,
           muxPlaybackId: playbackId,
           muxAssetId: payloadData.id,
-          thumbnailUrl: tempThumbnailUrl,
-          previewUrl: tempPreviewUrl,
           duration
         })
         .where(eq(videos.muxUploadId, payloadData.upload_id))
