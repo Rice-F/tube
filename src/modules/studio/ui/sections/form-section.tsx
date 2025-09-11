@@ -147,6 +147,16 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
     }
   })
 
+  // generate title
+  const generateTitle = trpc.videos.generateTitle.useMutation({
+    onSuccess: () => {
+      toast.success('Title generation started', { description: 'This may take a while.' })
+    },
+    onError: () => {
+      toast.error('Something went wrong')
+    }
+  })
+
   return (
     <>
       <ThumbnailUploadModal 
@@ -192,6 +202,19 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
                     <FormLabel>
                       <div className='flex items-center gap-x-2'>
                         Title
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          type="button"
+                          className='rounded-full size-6 [&_svg]:size-3'
+                          onClick={ () => generateTitle.mutate({ videoId}) }
+                          disabled={ generateTitle.isPending || !video.muxTrackId }
+                        >
+                          { generateTitle.isPending
+                              ? <Loader2Icon className='animate-spin'/>
+                              : <SparklesIcon />
+                          }
+                        </Button>
                       </div>
                     </FormLabel>
                     <FormControl>

@@ -82,7 +82,7 @@ export const videosRouter = createTRPCRouter({
       return updatedVideo
     }),
   delete: protectedProcedure
-    .input(z.object({videoId: z.uuid()}))
+    .input(z.object({ videoId: z.uuid() }))
     .mutation(async ({ ctx, input }) => {
       const {id: userId} = ctx.user
 
@@ -99,7 +99,7 @@ export const videosRouter = createTRPCRouter({
       return deletedVideo
     }),
   restoreThumbnail: protectedProcedure
-    .input(z.object({videoId: z.uuid()}))
+    .input(z.object({ videoId: z.uuid() }))
     .mutation(async ({ ctx, input }) => {
       const {id: userId} = ctx.user
 
@@ -148,12 +148,12 @@ export const videosRouter = createTRPCRouter({
       return updatedVideo
     }),
   generateThumbnail: protectedProcedure
-    .input(z.object({videoId: z.uuid()}))
+    .input(z.object({ videoId: z.uuid() }))
     .mutation(async ({ ctx, input }) => {
       const { id: userId } = ctx.user
     }),
   generateTitle: protectedProcedure
-    .input(z.object({videoId: z.uuid()}))
+    .input(z.object({ videoId: z.uuid() }))
     .mutation(async ({ ctx, input }) => {
       const { id: userId } = ctx.user
 
