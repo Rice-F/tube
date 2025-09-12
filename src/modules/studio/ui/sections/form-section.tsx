@@ -54,6 +54,7 @@ import { snakeCaseToTitle } from '@/lib/utils';
 
 import { VideoPlayer } from '@/modules/videos/ui/components/video-player';
 import { ThumbnailUploadModal } from '@/modules/studio/ui/components/thumbnail-upload-modal';
+import { ThumbnailGenerateModal } from '@/modules/studio/ui/components/thumbnail-generate-modal';
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -173,6 +174,11 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
         open={thumbnailUploadModalOpen}
         videoId={video.id}
         onOpenChange={setThumbnailUploadModalOpen}
+      />
+      <ThumbnailGenerateModal 
+        open={thumbnailGenerateModalOpen}
+        videoId={video.id}
+        onOpenChange={setThumbnailGenerateModalOpen}
       />
 
       {/* Form */}
@@ -317,7 +323,7 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
                       </div>
                     </FormControl>
                   </FormItem>
-      )}
+                )}
               />
               <FormField 
                 control={ formObject.control }
