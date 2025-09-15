@@ -5,6 +5,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { VideoPlayer } from '../components/video-player';
+import { VideoBanner } from '../components/video-banner';
 
 import { trpc } from '@/trpc/client'
 
@@ -49,5 +50,6 @@ export const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
         }}
       />
     </div>
+    <VideoBanner status={ video.muxStatus } />
   </>
 }
