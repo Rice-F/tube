@@ -3,7 +3,7 @@ import { TRPCError } from '@trpc/server'
 
 import { z } from 'zod'
 
-import { eq, and } from 'drizzle-orm'
+import { eq, and, getTableColumns } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { videos, videosUpdateSchema, users } from '@/db/schema'
@@ -14,6 +14,20 @@ import { workflow } from '@/lib/workflow'
 import { UTApi } from "uploadthing/server";
 
 export const videosRouter = createTRPCRouter({
+  getOne: baseProcedure
+    .input(z.object({ videoId: z.uuid() })) 
+    .query(async ({ input }) => {
+      const [video] = await db
+        .select({  // 返回一个嵌套对象
+          ...getTableColumns(videos),
+          user: {...getTableColumns(users) } 
+        })
+        .from(videos)
+        .innerJoin(users, eq(videos.userId, users.id)) // 关联用户表，获取用户信息
+        .where(eq(videos.id, input.videoId)) 
+      if (!video) throw new TRPCError({ code: 'NOT_FOUND' })
+      return video
+    }),
   // mutation对应对数据库的增删改，表示会修改数据库数据
   create: protectedProcedure
     .mutation(async ({ ctx }) => {
