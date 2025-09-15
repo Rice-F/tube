@@ -5,6 +5,7 @@ import Link from 'next/link'
 
 import { UserAvatar } from '@/components/user-avatar'
 import { Button } from '@/components/ui/button'
+import { SubscriptionButton } from '@/modules/subscriptions/ui/components/subscription-button'
 
 interface VideoOwnerProps {
   user: VideoGetOneOutput['user'],
@@ -24,7 +25,7 @@ export const VideoOwner = ({ user, videoId }: VideoOwnerProps) => {
           </span>
         </div>
       </Link>
-      {clerkUserId === user.id ? (
+      {clerkUserId === user.clerkId ? (
         <Button
           variant="secondary"
           asChild
@@ -34,7 +35,14 @@ export const VideoOwner = ({ user, videoId }: VideoOwnerProps) => {
             Edit Video
           </Link>
         </Button>
-      ) : (1)}
+      ) : (
+        <SubscriptionButton 
+          onClick={() => {}}
+          disabled={false}
+          isSubscribed={false}
+          className='flex-none'
+        />
+      )}
     </div>
   )
 }
