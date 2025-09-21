@@ -5,7 +5,8 @@ import {
   timestamp, 
   uniqueIndex,
   integer,
-  pgEnum
+  pgEnum,
+  primaryKey
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { 
@@ -24,9 +25,10 @@ export const users = pgTable("users", {
   updatedAt: timestamp("update_at").defaultNow().notNull(),
 }, t => [uniqueIndex("clerk_id_idx").on(t.clerkId)]); // 唯一索引，搜索优化
 
-export const usersRelations = relations(users, ({ many }) => (
-  { videos: many(videos) } // 一对多关系，用户可以有多个视频，或者为空
-))
+export const usersRelations = relations(users, ({ many }) => ({ 
+  videos: many(videos),  // 一对多关系，用户可以有多个视频，或者为空
+  videoViews: many(videoViews),
+}))
 
 // categories
 export const categories = pgTable("categories", {
@@ -73,8 +75,7 @@ export const videos = pgTable("videos", {
   updatedAt: timestamp("update_at").defaultNow().notNull(),
 });
 
-export const videoRelations = relations(videos, ({ one }) => (
-  {
+export const videoRelations = relations(videos, ({ one, many }) => ({
     user: one(users, {
       fields: [videos.userId],
       references: [users.id],
@@ -83,9 +84,41 @@ export const videoRelations = relations(videos, ({ one }) => (
       fields: [videos.categoryId],
       references: [categories.id],
     }),
-  }
-))
+    videoViews: many(videoViews),
+ }))
 
 export const videosInsertSchema = createInsertSchema(videos)  // 表单提交 / tRPC mutation 时验证
 export const videosUpdateSchema = createUpdateSchema(videos)  // 表单编辑 / tRPC update mutation 时验证
 export const videosSelectSchema = createSelectSchema(videos)  // 类型推导 / API 返回数据的验证
+
+// video views
+export const videoViews = pgTable("video_views", {
+  userId: uuid("user_id").references(() => users.id, {
+    onDelete: "cascade",
+  }).notNull(),
+  videoId: uuid("video_id").references(() => videos.id, {
+    onDelete: "cascade",
+  }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("update_at").defaultNow().notNull(),
+}, t => [
+  primaryKey({
+    name: "video_views_pkey",
+    columns: [t.userId, t.videoId], // 联合主键，确保每个用户对每个视频只能有一个观看记录
+  })
+])
+
+export const videoViewsRelations = relations(videoViews, ({ one }) => ({
+  users: one(users, {
+    fields: [videoViews.userId],
+    references: [users.id],
+  }),
+  videos: one(videos, {
+    fields: [videoViews.videoId],
+    references: [videos.id],
+  }),
+}))
+
+export const videoViewsInsertSchema = createInsertSchema(videoViews)
+export const videoViewsSelectSchema = createSelectSchema(videoViews)
+export const videoViewsUpdateSchema = createUpdateSchema(videoViews)
