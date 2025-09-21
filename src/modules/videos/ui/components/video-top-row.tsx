@@ -18,14 +18,14 @@ export const VideoTopRow = ({ video }: VideoBannerProps) => {
   const compactViews = useMemo(() => {
     return Intl.NumberFormat('en', {
       notation: 'compact', // 紧凑型，如 1K, 1M
-    }).format(1000)
-  }, [])
+    }).format(video.videoViews)
+  }, [video.videoViews])
 
   const expandedViews = useMemo(() => {
     return Intl.NumberFormat('en', {
       notation: 'standard', // 标准型，如 1,000, 1,000,000
-    }).format(1000)
-  }, [])
+    }).format(video.videoViews)
+  }, [video.videoViews])
 
   // data
   const compactDate = useMemo(() => {

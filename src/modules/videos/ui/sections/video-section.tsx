@@ -12,6 +12,8 @@ import { trpc } from '@/trpc/client'
 
 import { cn } from '@/lib/utils'
 
+import { useAuth } from '@clerk/nextjs';
+
 interface VideoSectionProps {
   videoId: string;
 }
@@ -33,7 +35,20 @@ export const VideoSectionSkeleton = () => {
 }
 
 export const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
+  const { isSignedIn } = useAuth();
+  const utils = trpc.useUtils()
+
   const [video] = trpc.videos.getOne.useSuspenseQuery({ videoId });
+  const createVideoView = trpc.videoViews.create.useMutation({
+    onSuccess: () => {
+      utils.videos.getOne.invalidate({ videoId })
+    }
+  });
+
+  const handlePlay = () => {
+    if (!isSignedIn) return
+    createVideoView.mutate({ videoId })
+  }
 
   return <>
     {/* aspect-video 保持视频宽高比 */}
@@ -46,9 +61,7 @@ export const VideoSectionSuspense = ({ videoId }: VideoSectionProps) => {
         playbackId={video.muxPlaybackId}
         thumbnailUrl={video.thumbnailUrl}
         autoPlay={false}
-        onPlay={() => {
-          console.log('Video is playing')
-        }}
+        onPlay={ handlePlay }
       />
     </div>
     <VideoBanner status={ video.muxStatus } />
