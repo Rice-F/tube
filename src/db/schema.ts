@@ -28,6 +28,7 @@ export const users = pgTable("users", {
 export const usersRelations = relations(users, ({ many }) => ({ 
   videos: many(videos),  // 一对多关系，用户可以有多个视频，或者为空
   videoViews: many(videoViews),
+  videoReactions: many(videoReactions),
 }))
 
 // categories
@@ -85,6 +86,7 @@ export const videoRelations = relations(videos, ({ one, many }) => ({
       references: [categories.id],
     }),
     videoViews: many(videoViews),
+    videoReactions: many(videoReactions),
  }))
 
 export const videosInsertSchema = createInsertSchema(videos)  // 表单提交 / tRPC mutation 时验证
@@ -103,7 +105,7 @@ export const videoViews = pgTable("video_views", {
   updatedAt: timestamp("update_at").defaultNow().notNull(),
 }, t => [
   primaryKey({
-    name: "video_views_pkey",
+    name: "video_views_p_key",
     columns: [t.userId, t.videoId], // 联合主键，确保每个用户对每个视频只能有一个观看记录
   })
 ])
@@ -122,3 +124,41 @@ export const videoViewsRelations = relations(videoViews, ({ one }) => ({
 export const videoViewsInsertSchema = createInsertSchema(videoViews)
 export const videoViewsSelectSchema = createSelectSchema(videoViews)
 export const videoViewsUpdateSchema = createUpdateSchema(videoViews)
+
+// video reactions
+export const reactionType = pgEnum('reaction_type', [
+  'like',
+  'dislike'
+])
+
+export const videoReactions = pgTable("video_reactions", {
+  userId: uuid("user_id").references(() => users.id, {
+    onDelete: "cascade",
+  }).notNull(),
+  videoId: uuid("video_id").references(() => videos.id, {
+    onDelete: "cascade",
+  }).notNull(),
+  type: reactionType('type').notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("update_at").defaultNow().notNull(),
+}, t => [
+  primaryKey({
+    name: "video_reactions_p_key",
+    columns: [t.userId, t.videoId],
+  })
+])
+
+export const videoReactionsRelations = relations(videoReactions, ({ one }) => ({
+  users: one(users, {
+    fields: [videoReactions.userId],
+    references: [users.id],
+  }),
+  videos: one(videos, {
+    fields: [videoReactions.videoId],
+    references: [videos.id],
+  }),
+}))
+
+export const videoReactionsInsertSchema = createInsertSchema(videoReactions)
+export const videoReactionsSelectSchema = createSelectSchema(videoReactions)
+export const videoReactionsUpdateSchema = createUpdateSchema(videoReactions)
