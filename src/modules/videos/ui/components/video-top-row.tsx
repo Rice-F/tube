@@ -42,7 +42,12 @@ export const VideoTopRow = ({ video }: VideoBannerProps) => {
       <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
         <VideoOwner user={video.user} videoId={video.id} />
         <div className='flex overflow-x-auto sm:min-w-[calc(50%-6px)] sm:justify-end sm:overflow-visible pb-2 -mb-2 sm:pb-0 sm:mb-0 gap-2'>
-          <VideoReactions />
+          <VideoReactions 
+            videoId={ video.id }
+            likes={ video.videoLikesCount }
+            dislikes={ video.videoDislikesCount }
+            viewerReaction={ video.viewerReaction }
+          />
           <VideoMenu videoId={ video.id } variant='secondary' />
         </div>
       </div>
