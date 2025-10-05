@@ -3,10 +3,10 @@ import { TRPCError } from '@trpc/server'
 
 import { z } from 'zod'
 
-import { eq, and, getTableColumns } from 'drizzle-orm'
+import { eq, and, getTableColumns, inArray } from 'drizzle-orm'
 
 import { db } from '@/db'
-import { videos, videosUpdateSchema, users, videoViews } from '@/db/schema'
+import { videos, videosUpdateSchema, users, videoViews, videoReactions } from '@/db/schema'
 
 import { mux } from '@/lib/mux'
 import { workflow } from '@/lib/workflow'
@@ -16,16 +16,64 @@ import { UTApi } from "uploadthing/server";
 export const videosRouter = createTRPCRouter({
   getOne: baseProcedure
     .input(z.object({ videoId: z.uuid() })) 
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      const { clerkUserId } = ctx // 可选的，未登录时为undefined
+
+      let viewerId;
+
+      // 从users表中查找clerkUserId对应的用户，也就是当前浏览视频的用户
+      // 浏览者可能未登录，未登录状态下clerkUserId为undefined
+      // inArray() 方法生成SQL的IN子句，确保即使clerkUserId为undefined时不会报错，只是匹配不到用户
+      const [viewer] = await db
+        .select()
+        .from(users)
+        .where(inArray(users.clerkId, clerkUserId ? [clerkUserId] : []))
+
+      if (viewer) viewerId = viewer.id
+
+      // 创建一个子查询，获取当前浏览者对每个视频的reaction作为一个临时表
+      // 后续在主查询中通过leftJoin()获取浏览者对当前视频的reaction
+      const viewerReactions = db.$with('viewer_reactions').as(
+        db
+          .select({
+            videoId: videoReactions.videoId,
+            type: videoReactions.type
+          })
+          .from(videoReactions)
+          .where(inArray(videoReactions.userId, viewerId ? [viewerId] : []))
+      )
+
       const [video] = await db
+        .with(viewerReactions) // 使用上面定义的子查询
         .select({  // 返回一个嵌套对象
           ...getTableColumns(videos),
-          user: {...getTableColumns(users) },
-          videoViews: db.$count(videoViews, eq(videoViews.videoId, videos.id)), // 计算关联的videoViews数量
+          // 视频发布者的信息
+          user: {...getTableColumns(users) }, 
+          // 计算关联的videoViews数量
+          videoViews: db.$count(videoViews, eq(videoViews.videoId, videos.id)), 
+          // 计算关联的videoReactions中type为'like'的数量
+          videoLikesCount: db.$count(videoReactions, and( 
+            eq(videoReactions.videoId, videos.id),
+            eq(videoReactions.type, 'like')
+          )),
+          // 计算关联的videoReactions中type为'dislike'的数量
+          videoDislikesCount: db.$count(videoReactions, and( 
+            eq(videoReactions.videoId, videos.id),
+            eq(videoReactions.type, 'dislike')
+          )),
+          // 当前浏览视频的用户对该视频的reaction类型
+          viewerReaction: viewerReactions.type 
         })
         .from(videos)
-        .innerJoin(users, eq(videos.userId, users.id)) // 关联用户表，获取用户信息
+        .innerJoin(users, eq(videos.userId, users.id)) // 关联用户表，获取视频发布者的信息
+        .leftJoin(viewerReactions, eq(videos.id, viewerReactions.videoId)) // 关联当前浏览视频的用户对视频的reaction
         .where(eq(videos.id, input.videoId)) 
+        // .groupBy(
+        //   videos.id,
+        //   users.id,
+        //   viewerReactions.type
+        // )
+
       if (!video) throw new TRPCError({ code: 'NOT_FOUND' })
       
       return video
