@@ -25,10 +25,16 @@ export const users = pgTable("users", {
   updatedAt: timestamp("update_at").defaultNow().notNull(),
 }, t => [uniqueIndex("clerk_id_idx").on(t.clerkId)]); // 唯一索引，搜索优化
 
-export const usersRelations = relations(users, ({ many }) => ({ 
+export const userRelations = relations(users, ({ many }) => ({ 
   videos: many(videos),  // 一对多关系，用户可以有多个视频，或者为空
   videoViews: many(videoViews),
   videoReactions: many(videoReactions),
+  subscriptions: many(subscriptions, {
+    relationName: 'subscriptions_viewer_id_f_key'
+  }),  // 订阅关系，用户作为订阅者
+  subscribers: many(subscriptions, {
+    relationName: 'subscriptions_creator_id_f_key'
+  }),  // 订阅关系，用户作为创作者被订阅
 }))
 
 // categories
@@ -162,3 +168,33 @@ export const videoReactionsRelations = relations(videoReactions, ({ one }) => ({
 export const videoReactionsInsertSchema = createInsertSchema(videoReactions)
 export const videoReactionsSelectSchema = createSelectSchema(videoReactions)
 export const videoReactionsUpdateSchema = createUpdateSchema(videoReactions)
+
+// video subscriptions
+export const subscriptions = pgTable("subscriptions", {
+  viewerId: uuid("viewer_id").references(() => users.id, {
+    onDelete: "cascade",
+  }).notNull(), // 订阅者
+  creatorId: uuid("creator_id").references(() => users.id, {
+    onDelete: "cascade",
+  }).notNull(),  // 被订阅的创作者
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("update_at").defaultNow().notNull(),
+}, t => [
+  primaryKey({
+    name: "subscriptions_p_key",
+    columns: [t.viewerId, t.creatorId], 
+  })
+])
+
+export const subscriptionRelations = relations(subscriptions, ({ one }) => ({
+  viewer: one(users, {
+    fields: [subscriptions.viewerId],
+    references: [users.id],
+    relationName: 'subscriptions_viewer_id_f_key' // 解决同表关联冲突
+  }),
+  creator: one(users, {
+    fields: [subscriptions.creatorId],
+    references: [users.id],
+    relationName: 'subscriptions_creator_id_f_key' // 解决同表关联冲突
+  }),
+})) 
