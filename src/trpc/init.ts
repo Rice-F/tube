@@ -29,6 +29,11 @@ export type Context = Awaited<ReturnType<typeof createTRPCContext>>;
 // 将 Context 类型注入到所有 procedure 的上下文中
 const t = initTRPC.context<Context>().create({
   transformer: superjson,
+  // 全局错误格式化器
+  errorFormatter({shape, error}){
+    console.error('tRPC Error:', error);
+    return shape;
+  }
 });
 
 // Base router and procedure helpers
@@ -51,9 +56,9 @@ export const protectedProcedure = t.procedure.use(async function isAuthed(opts) 
   
   if (!user) throw new TRPCError({ code: 'UNAUTHORIZED' }); // 自动返回401
 
-  const {success} = await ratelimit.limit(user.id);
+  // const {success} = await ratelimit.limit(user.id);
 
-  if(!success) throw new TRPCError({code: 'TOO_MANY_REQUESTS'});
+  // if(!success) throw new TRPCError({code: 'TOO_MANY_REQUESTS'});
 
   // 请求继续，进入实际的处理函数(resolver)
   return opts.next({
