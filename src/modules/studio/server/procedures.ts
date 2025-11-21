@@ -14,8 +14,8 @@ export const studioRouter = createTRPCRouter({
       z.object({
         // 可选游标参数，上一次的最后一条数据，首次请求可不传
         cursor: z.object({ 
-            id: z.uuid(),
-            updatedAt: z.date(),
+          id: z.uuid(),
+          updatedAt: z.date(),
         }).nullish(), 
         // 每页数据条数限制
         limit: z.number().min(1).max(100), 
