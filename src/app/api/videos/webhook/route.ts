@@ -70,7 +70,6 @@ export const POST = async (request: Request) => {
       const playbackId = payloadData.playback_ids?.[0]?.id
 
       if(!payloadData.upload_id || !playbackId) {
-        // return logger.error("Missing upload Id or playback ID")
         throw new Response("Missing upload Id or playback ID", { status: 400 })
       }
 
@@ -87,7 +86,6 @@ export const POST = async (request: Request) => {
           const uploadThumbnail = await utApi.uploadFilesFromUrl(tempThumbnailUrl)
 
           if(!uploadThumbnail.data?.ufsUrl) {
-            // return logger.error("Failed to upload thumbnail")
             throw new Response("Failed to upload thumbnail", { status: 500 })
           }
 
@@ -101,7 +99,6 @@ export const POST = async (request: Request) => {
             })
             .where(eq(videos.muxUploadId, payloadData.upload_id!)) // data.upload_id! 表示非空断言
         }catch(err) {
-          // logger.error('Error processing video.asset.ready webhook:', err)
           throw new Response("Error processing video.asset.ready webhook:", { status: 500 })
         }
       }) 
@@ -126,7 +123,6 @@ export const POST = async (request: Request) => {
             })
             .where(eq(videos.muxUploadId, payloadData.upload_id!))
         }catch (err) {
-          // logger.error('Error processing video.asset.ready webhook:', err)
           throw new Response("Error processing video.asset.ready webhook:", { status: 500 })
         }
 
