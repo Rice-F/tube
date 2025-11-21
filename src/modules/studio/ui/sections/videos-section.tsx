@@ -91,7 +91,6 @@ export const VideosSkeleton = () => {
 
 export const VideosSectionSuspense = () => {
   const router = useRouter()
-
   const [videos, query] = trpc.studio.getAll.useSuspenseInfiniteQuery(
     { limit: DEFAULT_LIMIT },
     { getNextPageParam: lastPage => lastPage.nextCursor }
