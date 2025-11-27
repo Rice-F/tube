@@ -3,10 +3,17 @@ import { TRPCError } from '@trpc/server'
 
 import { z } from 'zod'
 
-import { eq, and, getTableColumns, inArray } from 'drizzle-orm'
+import { eq, and, getTableColumns, inArray, isNotNull } from 'drizzle-orm'
 
 import { db } from '@/db'
-import { videos, videosUpdateSchema, users, videoViews, videoReactions } from '@/db/schema'
+import { 
+  videos, 
+  videosUpdateSchema, 
+  users, 
+  videoViews, 
+  videoReactions,
+  subscriptions
+} from '@/db/schema'
 
 import { mux } from '@/lib/mux'
 import { workflow } from '@/lib/workflow'
@@ -43,12 +50,26 @@ export const videosRouter = createTRPCRouter({
           .where(inArray(videoReactions.userId, viewerId ? [viewerId] : []))
       )
 
+      // 创建一个子查询，获取当前浏览者的所有订阅记录作为一个临时表
+      const viewerSubscriptions = db.$with('viewer_subscriptions').as(
+        db
+          .select()
+          .from(subscriptions)
+          .where(inArray(subscriptions.viewerId, viewerId ? [viewerId] : []))
+      )
+
       const [video] = await db
-        .with(viewerReactions) // 使用上面定义的子查询
+        .with(viewerReactions, viewerSubscriptions) // 使用上面定义的子查询
         .select({  // 返回一个嵌套对象
           ...getTableColumns(videos),
           // 视频发布者的信息
-          user: {...getTableColumns(users) }, 
+          user: {
+            ...getTableColumns(users),
+            // 计算该视频发布者的订阅者数量
+            subscriberCount: db.$count(subscriptions, eq(subscriptions.creatorId, users.id)), 
+            // 当前浏览视频的用户是否订阅了该视频的发布者
+            viewerIsSubscribed: isNotNull(viewerSubscriptions.viewerId).mapWith(Boolean) 
+          }, 
           // 计算关联的videoViews数量
           videoViews: db.$count(videoViews, eq(videoViews.videoId, videos.id)), 
           // 计算关联的videoReactions中type为'like'的数量
@@ -67,6 +88,7 @@ export const videosRouter = createTRPCRouter({
         .from(videos)
         .innerJoin(users, eq(videos.userId, users.id)) // 关联用户表，获取视频发布者的信息
         .leftJoin(viewerReactions, eq(videos.id, viewerReactions.videoId)) // 关联当前浏览视频的用户对视频的reaction
+        .leftJoin(viewerSubscriptions, eq(users.id, viewerSubscriptions.creatorId)) // 关联当前浏览视频的用户对当前视频创作者的订阅记录
         .where(eq(videos.id, input.videoId)) 
         // .groupBy(
         //   videos.id,
