@@ -5,6 +5,7 @@ import { studioRouter } from '@/modules/studio/server/procedures';
 import { videosRouter } from '@/modules/videos/server/procedure';
 import { VideoViewsRouter } from '@/modules/video-views/server/procedures';
 import { VideoReactionsRouter } from '@/modules/video-reactions/server/procedure';
+import { subscriptionsRouter } from '@/modules/subscriptions/server/procedures';
 
 // tRPC总路由
 export const appRouter = createTRPCRouter({
@@ -13,6 +14,7 @@ export const appRouter = createTRPCRouter({
   videos: videosRouter,
   videoViews: VideoViewsRouter,
   videoReactions: VideoReactionsRouter,
+  subscriptions: subscriptionsRouter,
 });
 
 export type AppRouter = typeof appRouter;
