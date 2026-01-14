@@ -14,6 +14,7 @@ import {
   createUpdateSchema,  // 更新验证 - 定义更新数据库的数据结构
   createSelectSchema,  // 查询验证 - 定义查询数据库的数据结构
  } from 'drizzle-zod'
+import { create } from "domain";
 
 // users
 export const users = pgTable("users", {
@@ -35,6 +36,7 @@ export const userRelations = relations(users, ({ many }) => ({
   subscribers: many(subscriptions, {
     relationName: 'subscriptions_creator_id_f_key'
   }),  // 订阅关系，用户作为创作者被订阅
+  comments: many(comments)
 }))
 
 // categories
@@ -93,6 +95,7 @@ export const videoRelations = relations(videos, ({ one, many }) => ({
     }),
     videoViews: many(videoViews),
     videoReactions: many(videoReactions),
+    comments: many(comments)
  }))
 
 export const videosInsertSchema = createInsertSchema(videos)  // 表单提交 / tRPC mutation 时验证
@@ -198,3 +201,28 @@ export const subscriptionRelations = relations(subscriptions, ({ one }) => ({
     relationName: 'subscriptions_creator_id_f_key' // 解决同表关联冲突
   }),
 })) 
+
+// video comments
+export const comments = pgTable('comments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  videoId: uuid('video_id').references(() => videos.id, { onDelete: 'cascade' }).notNull(),
+  value: text('value').notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("update_at").defaultNow().notNull(),
+})
+
+export const commentRelations = relations(comments, ({ one }) => ({
+  user: one(users, {
+    fields: [comments.userId],
+    references: [users.id]
+  }),
+  video: one(videos, {
+    fields: [comments.videoId],
+    references: [videos.id]
+  })
+}))
+
+export const commentSelectSchema = createSelectSchema(comments)
+export const commentInsertSchema = createInsertSchema(comments)
+export const commentUpdateSchema = createUpdateSchema(comments)
