@@ -4,9 +4,9 @@ import { Suspense } from 'react'
 import { ErrorBoundary } from 'react-error-boundary';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { VideoPlayer } from '../components/video-player';
+import { VideoPlayer, VideoPlayerSkeleton } from '../components/video-player';
 import { VideoBanner } from '../components/video-banner';
-import { VideoTopRow } from '../components/video-top-row';
+import { VideoTopRow, VideoTopRowSkeleton } from '../components/video-top-row';
 
 import { trpc } from '@/trpc/client'
 
@@ -30,7 +30,10 @@ export const VideoSection = ({ videoId }: VideoSectionProps) => {
 
 export const VideoSectionSkeleton = () => {
   return (
-    <div>skeleton</div>
+    <>
+      <VideoPlayerSkeleton />
+      <VideoTopRowSkeleton />
+    </>
   )
 }
 
