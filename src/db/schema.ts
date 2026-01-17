@@ -224,5 +224,5 @@ export const commentRelations = relations(comments, ({ one }) => ({
 }))
 
 export const commentSelectSchema = createSelectSchema(comments)
-export const commentInsertSchema = createInsertSchema(comments)
+export const commentInsertSchema = createInsertSchema(comments).omit({ userId: true }) // insert校验时忽略userId，因为由服务器端上下文注入
 export const commentUpdateSchema = createUpdateSchema(comments)
