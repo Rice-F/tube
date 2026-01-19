@@ -6,7 +6,7 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 
 interface CommentItemProps {
-  comment: CommentsGetManyOutput[number];
+  comment: CommentsGetManyOutput["commentsData"][number];
 } 
 
 export const CommentItem = ({ comment }: CommentItemProps) => {
