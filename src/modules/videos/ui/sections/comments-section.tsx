@@ -12,17 +12,27 @@ import { DEFAULT_LIMIT } from '@/constants';
 
 import { InfiniteScroll } from '@/components/infinite-scroll';
 
+import { Loader2Icon } from 'lucide-react';
+
 interface CommentsSectionProps {
   videoId: string;
 }
 
 export const CommentsSection = ({ videoId }: CommentsSectionProps) => {
   return (
-    <Suspense fallback={<div>Loading comments...</div>}>
+    <Suspense fallback={ <CommentSectionSkeleton /> }>
       <ErrorBoundary fallback={<p>Error</p>}>
         <CommentsSectionSuspense videoId={videoId} />
       </ErrorBoundary>
     </Suspense>
+  )
+}
+
+const CommentSectionSkeleton = () => {
+  return (
+    <div className='mt-6 flex justify-center items-center'>
+      <Loader2Icon className='text-muted-foreground size-7 animated-spin' />
+    </div>
   )
 }
 
