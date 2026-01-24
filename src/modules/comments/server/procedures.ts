@@ -128,7 +128,7 @@ export const commentsRouter = createTRPCRouter({
             ) : undefined
           ))
           .innerJoin(users, eq(comments.userId, users.id))
-          .leftJoin(commentReactions, eq(comments.id, viewerReactions.commentId))
+          .leftJoin(viewerReactions, eq(comments.id, viewerReactions.commentId))
           .orderBy(desc(comments.createdAt), desc(comments.id))
           .limit(limit + 1)
       ])
