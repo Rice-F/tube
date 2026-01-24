@@ -14,7 +14,12 @@ import {
   createUpdateSchema,  // 更新验证 - 定义更新数据库的数据结构
   createSelectSchema,  // 查询验证 - 定义查询数据库的数据结构
  } from 'drizzle-zod'
-import { create } from "domain";
+
+// reactionType
+export const reactionType = pgEnum('reaction_type', [
+  'like',
+  'dislike'
+])
 
 // users
 export const users = pgTable("users", {
@@ -36,7 +41,8 @@ export const userRelations = relations(users, ({ many }) => ({
   subscribers: many(subscriptions, {
     relationName: 'subscriptions_creator_id_f_key'
   }),  // 订阅关系，用户作为创作者被订阅
-  comments: many(comments)
+  comments: many(comments),
+  commentReactions: many(commentReactions),
 }))
 
 // categories
@@ -120,11 +126,11 @@ export const videoViews = pgTable("video_views", {
 ])
 
 export const videoViewsRelations = relations(videoViews, ({ one }) => ({
-  users: one(users, {
+  user: one(users, {
     fields: [videoViews.userId],
     references: [users.id],
   }),
-  videos: one(videos, {
+  video: one(videos, {
     fields: [videoViews.videoId],
     references: [videos.id],
   }),
@@ -135,11 +141,6 @@ export const videoViewsSelectSchema = createSelectSchema(videoViews)
 export const videoViewsUpdateSchema = createUpdateSchema(videoViews)
 
 // video reactions
-export const reactionType = pgEnum('reaction_type', [
-  'like',
-  'dislike'
-])
-
 export const videoReactions = pgTable("video_reactions", {
   userId: uuid("user_id").references(() => users.id, {
     onDelete: "cascade",
@@ -158,11 +159,11 @@ export const videoReactions = pgTable("video_reactions", {
 ])
 
 export const videoReactionsRelations = relations(videoReactions, ({ one }) => ({
-  users: one(users, {
+  user: one(users, {
     fields: [videoReactions.userId],
     references: [users.id],
   }),
-  videos: one(videos, {
+  video: one(videos, {
     fields: [videoReactions.videoId],
     references: [videos.id],
   }),
@@ -212,7 +213,7 @@ export const comments = pgTable('comments', {
   updatedAt: timestamp("update_at").defaultNow().notNull(),
 })
 
-export const commentRelations = relations(comments, ({ one }) => ({
+export const commentRelations = relations(comments, ({ one, many }) => ({
   user: one(users, {
     fields: [comments.userId],
     references: [users.id]
@@ -220,9 +221,39 @@ export const commentRelations = relations(comments, ({ one }) => ({
   video: one(videos, {
     fields: [comments.videoId],
     references: [videos.id]
-  })
+  }),
+  reactions: many(commentReactions)
 }))
 
 export const commentSelectSchema = createSelectSchema(comments)
 export const commentInsertSchema = createInsertSchema(comments).omit({ userId: true }) // insert校验时忽略userId，因为由服务器端上下文注入
 export const commentUpdateSchema = createUpdateSchema(comments)
+
+// comment reactions
+export const commentReactions = pgTable("comment_reactions", {
+  userId: uuid("user_id").references(() => users.id, {
+    onDelete: "cascade",
+  }).notNull(),
+  commentId: uuid("comment_id").references(() => comments.id, {
+    onDelete: "cascade",
+  }).notNull(),
+  type: reactionType('type').notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("update_at").defaultNow().notNull(),
+}, t => [
+  primaryKey({
+    name: "comment_reactions_p_key",
+    columns: [t.userId, t.commentId],
+  })
+])
+
+export const commentReactionsRelations = relations(commentReactions, ({ one }) => ({
+  user: one(users, {
+    fields: [commentReactions.userId],
+    references: [users.id],
+  }),
+  comment: one(comments, {
+    fields: [commentReactions.commentId],
+    references: [comments.id],
+  }),
+}))
