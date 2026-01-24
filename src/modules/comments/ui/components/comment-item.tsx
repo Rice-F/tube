@@ -13,11 +13,13 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 
 import { trpc } from '@/trpc/client'
-import { MessageSquareIcon, MoreVerticalIcon, Trash2Icon } from "lucide-react";
+import { MessageSquareIcon, MoreVerticalIcon, Trash2Icon, ThumbsUpIcon, ThumbsDownIcon } from "lucide-react";
 
 import { useAuth, useClerk } from "@clerk/nextjs";
 
 import { toast } from "sonner";
+
+import { cn } from "@/lib/utils";
 interface CommentItemProps {
   comment: CommentsGetManyOutput["commentsData"][number];
 } 
@@ -56,8 +58,33 @@ export const CommentItem = ({ comment }: CommentItemProps) => {
             </div>
           </Link>
           <p className="text-sm">{comment.value}</p>
+          {/* reaction */}
+          <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center">
+              <Button
+                disabled={false}
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                onClick={() => {}}
+              >
+                <ThumbsUpIcon className={cn(comment.viewerReaction === 'like' && 'fill-black')} />
+              </Button>
+              <span className="text-xs text-muted-foreground">{comment.likeCount}</span>
+              <Button
+                disabled={false}
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                onClick={() => {}}
+              >
+                <ThumbsDownIcon className={cn(comment.viewerReaction === 'dislike' && 'fill-black')} />
+              </Button>
+              <span className="text-xs text-muted-foreground">{comment.dislikeCount}</span>
+            </div>
+          </div>
         </div>
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button variant='ghost' size="icon" className="size-8">
               <MoreVerticalIcon />
