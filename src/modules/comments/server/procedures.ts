@@ -1,8 +1,12 @@
 import { z } from "zod";
 
 import { db } from "@/db";
-import { and, eq, getTableColumns, desc, lt, or, count } from "drizzle-orm";
-import { comments, users, commentInsertSchema, commentUpdateSchema } from "@/db/schema";
+import { and, eq, getTableColumns, desc, lt, or, count, inArray } from "drizzle-orm";
+import { 
+  comments, 
+  users, 
+  commentReactions
+ } from "@/db/schema";
 
 import {  baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
@@ -57,8 +61,30 @@ export const commentsRouter = createTRPCRouter({
         limit: z.number().min(1).max(100), 
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const { videoId, cursor, limit } = input
+      const { clerkUserId } = ctx
+
+      // 获取当前浏览者id
+      let viewerId
+
+      const [viewer] = await db
+        .select()
+        .from(users)
+        .where(inArray(users.clerkId, clerkUserId ? [clerkUserId] : []))
+
+      if (viewer) viewerId = viewer.id
+
+      // 获取当前浏览者对评论的反应
+      const viewerReactions = db.$with('viewer-reactions').as(
+        db
+          .select({
+            commentId: commentReactions.commentId,
+            type: commentReactions.type,
+          })
+          .from(commentReactions)
+          .where(inArray(commentReactions.userId, viewerId ? [viewerId] : []))
+      )
 
       // 并行执行两个查询
       const [total, data] = await Promise.all([
@@ -70,9 +96,25 @@ export const commentsRouter = createTRPCRouter({
           .where(eq(comments.videoId, videoId)),
 
         db
+          .with(viewerReactions)
           .select({
             ...getTableColumns(comments),
-            user: users
+            user: users,
+            viewerReaction: viewerReactions.type,
+            likeCount: db.$count(
+              commentReactions,
+              and(
+                eq(commentReactions.type, 'like'),
+                eq(commentReactions.commentId, comments.id)
+              )
+            ),
+            dislikeCount: db.$count(
+              commentReactions,
+              and(
+                eq(commentReactions.type, 'dislike'),
+                eq(commentReactions.commentId, comments.id)
+              )
+            )
           })
           .from(comments)
           .where(and(
@@ -86,6 +128,7 @@ export const commentsRouter = createTRPCRouter({
             ) : undefined
           ))
           .innerJoin(users, eq(comments.userId, users.id))
+          .leftJoin(commentReactions, eq(comments.id, viewerReactions.commentId))
           .orderBy(desc(comments.createdAt), desc(comments.id))
           .limit(limit + 1)
       ])
