@@ -215,6 +215,7 @@ export const comments = pgTable('comments', {
   updatedAt: timestamp("update_at").defaultNow().notNull(),
 }, t => {
   return [
+    // 自引用外键，关联到同一表的id字段
     foreignKey({
       columns: [t.parentCommentId],
       foreignColumns: [t.id],
