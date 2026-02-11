@@ -4,3 +4,4 @@ import { AppRouter } from "@/trpc/routers/_app";
 
 // 类型推导
 export type VideoGetOneOutput = inferRouterOutputs<AppRouter>['videos']['getOne'];
+export type SuggestionsGetManyOutput = inferRouterOutputs<AppRouter>['suggestions']['getMany'];
