@@ -189,18 +189,18 @@ export const videosRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const {id: userId} = ctx.user
 
-      const [exitingVideo] = await db
+      const [existingVideo] = await db
         .select()
         .from(videos)
         .where(and(
           eq(videos.id, input.videoId),
           eq(videos.userId, userId)
         ))
-      if(!exitingVideo) throw new TRPCError({ code: 'NOT_FOUND' })
+      if(!existingVideo) throw new TRPCError({ code: 'NOT_FOUND' })
 
-      if (exitingVideo.thumbnailKey) {
+      if (existingVideo.thumbnailKey) {
         const utApi = new UTApi(); 
-        await utApi.deleteFiles(exitingVideo.thumbnailKey); // 清除uploadthing旧的thumbnail
+        await utApi.deleteFiles(existingVideo.thumbnailKey); // 清除uploadthing旧的thumbnail
         await db
           .update(videos)
           .set({ thumbnailKey: null, thumbnailUrl: null }) // 清除数据库中旧的thumbnail
@@ -212,9 +212,9 @@ export const videosRouter = createTRPCRouter({
           );
       }
 
-      if(!exitingVideo.muxPlaybackId) throw new TRPCError({ code: 'BAD_REQUEST' })
+      if(!existingVideo.muxPlaybackId) throw new TRPCError({ code: 'BAD_REQUEST' })
 
-      const tempThumbnailUrl = `https://image.mux.com/${exitingVideo.muxPlaybackId}/thumbnail.jpg`
+      const tempThumbnailUrl = `https://image.mux.com/${existingVideo.muxPlaybackId}/thumbnail.jpg`
       const utApi = new UTApi(); 
       const uploadThumbnail = await utApi.uploadFilesFromUrl(tempThumbnailUrl)
       if(!uploadThumbnail.data) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' })
@@ -270,4 +270,46 @@ export const videosRouter = createTRPCRouter({
 
       return workflowRunId
     }),
+  revalidate: protectedProcedure
+    .input(z.object({ videoId: z.uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const { id: userId } = ctx.user
+
+      const [existingVideo] = await db
+        .select()
+        .from(videos)
+        .where(and(
+          eq(videos.id, input.videoId),
+          eq(videos.userId, userId)
+        ))
+      if(!existingVideo) throw new TRPCError({ code: 'NOT_FOUND' })
+      if(!existingVideo.muxUploadId) throw new TRPCError({ code: 'BAD_REQUEST' })
+      
+      const upload = await mux.video.uploads.retrieve(existingVideo.muxUploadId)
+      if(!upload || !upload.asset_id) throw new TRPCError({ code: 'BAD_REQUEST' })
+
+      const asset = await mux.video.assets.retrieve(upload.asset_id)
+      if(!asset) throw new TRPCError({ code: 'BAD_REQUEST' })
+
+      const playbackId = asset.playback_ids?.[0]?.id
+      const duration = asset.duration ? Math.round(asset.duration * 1000) : 0
+
+      const [updatedVideo] = await db
+        .update(videos)
+        .set({
+          muxStatus: asset.status,
+          muxPlaybackId: playbackId,
+          muxAssetId: asset.id,
+          duration,
+        })
+        .where(
+          and(
+            eq(videos.id, input.videoId),
+            eq(videos.userId, userId)
+          )
+        )
+        .returning()
+
+      return updatedVideo
+    })
 })

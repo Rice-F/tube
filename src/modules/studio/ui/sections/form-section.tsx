@@ -20,7 +20,7 @@ import {
   MoreVerticalIcon, 
   RotateCcwIcon,
   SparklesIcon,
-  TrashIcon 
+  TrashIcon
 } from 'lucide-react';
 
 import { Skeleton } from '@/components/ui/skeleton';
@@ -173,6 +173,17 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
     }
   })
 
+  const revalidateVideo = trpc.videos.revalidate.useMutation({
+    onSuccess: () => {
+      utils.studio.getAll.invalidate()
+      utils.studio.getOne.invalidate({ videoId })
+      toast.success('Video revalidated')
+    },
+    onError: () => {
+      toast.error('Something went wrong')
+    }
+  })
+
   // link & copy
   const [isCopied, setIsCopied] = useState(false)
   const linkUrl = `${process.env.VERCEL_URL || 'http://localhost:3000'}/videos/${video.id}`
@@ -252,6 +263,9 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => revalidateVideo.mutate({ videoId })}>
+                    <RotateCcwIcon className='size-4 mr-2' /> Revalidate
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => deleteVideo.mutate({ videoId })}>
                     <TrashIcon className='size-4 mr-2' /> Delete
                   </DropdownMenuItem>
@@ -445,7 +459,7 @@ const FormSectionSuspense = ({ videoId }: FormSectionProps) => {
                 name="visibility"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>visibility</FormLabel>
+                    <FormLabel>Visibility</FormLabel>
                     <Select onValueChange={ field.onChange } defaultValue={ field.value || undefined }>
                       <FormControl>
                         <SelectTrigger className='w-full'>
