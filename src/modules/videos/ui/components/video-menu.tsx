@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 
 import { 
   MoreHorizontalIcon, 
+  MoreVerticalIcon,
   ShareIcon, 
   ListPlusIcon, 
   Trash2Icon 
@@ -35,7 +36,7 @@ export const VideoMenu = ({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant={variant} size='icon' className='rounded-full'>
-          <MoreHorizontalIcon />
+          <MoreVerticalIcon />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' onClick={e => e.stopPropagation}>
