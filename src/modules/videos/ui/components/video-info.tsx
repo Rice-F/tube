@@ -6,12 +6,25 @@ import Link from 'next/link'
 import { UserAvatar } from '@/components/user-avatar'
 import { UserInfo } from '@/modules/users/ui/components/user-info'
 import { VideoMenu } from './video-menu'
+import { Skeleton } from '@/components/ui/skeleton'
 
 import { formatDistanceToNow } from 'date-fns'
 
 interface VideoGridCardProps {
   data: SuggestionsGetManyOutput['videosData'][number],
   onRemove?: () => void,
+}
+
+export const VideoInfoSkeleton = () => {
+  return (
+    <div className='flex gap-3'>
+      <Skeleton className='size-10 rounded-full' />
+      <div className='space-y-2 min-w-0 flex-1'>
+        <Skeleton className='h-5 w-[90%]' />
+        <Skeleton className='h-5 w-[70%]' />
+      </div>
+    </div>
+  )
 }
 
 export const VideoInfo = ({ data, onRemove }: VideoGridCardProps) => {
